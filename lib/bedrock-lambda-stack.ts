@@ -1,16 +1,37 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import {
+  Stack,
+  StackProps,
+  aws_lambda_nodejs,
+  aws_lambda,
+  aws_iam,
+  Duration,
+} from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as path from "path";
 
 export class BedrockLambdaStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
-
-    // example resource
-    // const queue = new sqs.Queue(this, 'BedrockLambdaQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const bedrockLambda = new aws_lambda_nodejs.NodejsFunction(
+      this,
+      "BedrockLambda",
+      {
+        runtime: aws_lambda.Runtime.NODEJS_16_X,
+        handler: "handler",
+        entry: path.join(__dirname, "../src/lambda/bedrock/index.ts"),
+        bundling: {
+          forceDockerBundling: false,
+        },
+        timeout: Duration.seconds(90),
+      }
+    );
+    bedrockLambda.addToRolePolicy(
+      new aws_iam.PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
+        actions: ["bedrock:InvokeModel"],
+        resources: ["*"],
+      })
+    );
   }
 }
